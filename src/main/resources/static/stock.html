@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <link rel="stylesheet" href="/css/style.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+
+<body>
+<div class="container">
+
+    <button onclick="goBack()" class="back-btn">Back</button>
+
+    <h2>Stock</h2>
+
+    <input id="searchId" placeholder="Product ID">
+    <input id="searchName" placeholder="Search by Name">
+    <input id="searchSupplier" placeholder="Supplier ID">
+
+    <button onclick="search()">Search</button>
+    <button onclick="loadStock()">Refresh</button>
+
+    <table>
+        <thead>
+        <tr>
+            <th>ID</th><th>Name</th><th>Supplier</th><th>Qty</th>
+        </tr>
+        </thead>
+        <tbody id="stockTable"></tbody>
+    </table>
+
+    <div class="chart-container">
+        <canvas id="stockChart"></canvas>
+    </div>
+
+</div>
+
+<script src="/js/api.js"></script>
+<script src="/js/stock.js"></script>
+<script src="/js/common.js"></script>
+
+<script>
+    let chart;
+
+    function loadStock() {
+        fetch("/products")
+            .then(res => res.json())
+            .then(data => {
+
+                const table = document.getElementById("stockTable");
+                table.innerHTML = "";
+
+                let labels = [];
+                let quantities = [];
+
+                data.forEach(p => {
+
+                    // Table
+                    table.innerHTML += `
+                    <tr>
+                        <td>${p.id}</td>
+                        <td>${p.name}</td>
+                        <td>${p.supplierId}</td>
+                        <td>${p.quantity}</td>
+                    </tr>`;
+
+                    // 🔥 UNIQUE LABEL (IMPORTANT)
+                    labels.push(p.name + " (S" + p.supplierId + ")");
+                    quantities.push(p.quantity);
+                });
+
+                if (chart) chart.destroy();
+
+                chart = new Chart(document.getElementById("stockChart"), {
+                    type: 'bar',
+                    data: {
+                        labels: labels,
+                        datasets: [{
+                            label: 'Stock Levels',
+                            data: quantities,
+                            backgroundColor: quantities.map(q => q < 5 ? 'red' : 'green')
+                        }]
+                    }
+                });
+            });
+    }
+
+    loadStock();
+</script>
+
+</body>
+</html>

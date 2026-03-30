@@ -53,7 +53,7 @@ function addProduct() {
     .then(() => {
         alert("Product Added");
         loadProducts();
-
+        loadStockChart();
         // clear inputs
         document.getElementById("name").value = "";
         document.getElementById("price").value = "";
@@ -81,4 +81,7 @@ function loadLowStock() {
                 list.innerHTML += `<li>${p.name} - Qty: ${p.quantity}</li>`;
             });
         });
+}
+function goBack() {
+    window.location.href = "/index.html";
 }

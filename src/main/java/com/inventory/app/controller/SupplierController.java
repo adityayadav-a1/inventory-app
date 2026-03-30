@@ -24,4 +24,13 @@ public class SupplierController {
     public List<Supplier> getAllSuppliers() {
         return service.getAllSuppliers();
     }
+    @DeleteMapping("/{id}")
+    public void deleteSupplier(@PathVariable int id) {
+        service.deleteSupplier(id);
+    }
+
+    @PutMapping("/{id}")
+    public Supplier updateSupplier(@PathVariable int id, @RequestBody Supplier supplier) {
+        return service.updateSupplier(id, supplier);
+    }
 }

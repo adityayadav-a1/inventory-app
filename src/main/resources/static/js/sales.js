@@ -16,7 +16,7 @@ function makeSale() {
     })
     .then(() => {
         alert("Sale Done");
-        loadProducts();
+        loadStock();
     })
     .catch(err => {
         alert(err.message);

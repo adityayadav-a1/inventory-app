@@ -3,6 +3,9 @@ package com.inventory.app.service;
 import com.inventory.app.exception.ResourceNotFoundException;
 import com.inventory.app.model.Product;
 import com.inventory.app.repository.ProductRepository;
+import com.inventory.app.repository.PurchaseRepository;
+import com.inventory.app.repository.SalesRepository;
+import com.inventory.app.repository.SupplierRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -14,13 +17,25 @@ public class ProductService {
     @Autowired
     private ProductRepository repo;
 
+    @Autowired
+    private SupplierRepository supplierRepo;
+
+    @Autowired
+    private SalesRepository salesRepository;
+
+    @Autowired
+    private PurchaseRepository purchaseRepository;
+
     public Product addProduct(Product product) {
+
+        if (!supplierRepo.existsById(product.getSupplierId())) {
+            throw new RuntimeException("Supplier ID does not exist");
+        }
+
         if (repo.existsByNameAndSupplierId(product.getName(), product.getSupplierId())) {
             throw new RuntimeException("Product with same name and supplier already exists");
         }
-        if(product.getQuantity() < 0){
-            throw new RuntimeException("Quantity cannot be negative");
-        }
+
         return repo.save(product);
     }
 
@@ -33,29 +48,35 @@ public class ProductService {
         Product product = repo.findById(id)
                 .orElseThrow(() -> new RuntimeException("Product not found"));
 
-        product.setActive(false); // 🔥 instead of deleting
+        // 🔥 DELETE FROM CHILD TABLES FIRST
+        salesRepository.deleteByProductId(id);
+        purchaseRepository.deleteByProductId(id);
 
-        repo.save(product);
+        // 🔥 THEN DELETE PRODUCT
+        repo.deleteById(id);
     }
 
-    public Product updateProduct(int id, Product updatedProduct) {
-        Product product = repo.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Product not found with id: " + id));
+    public Product updateProduct(int id, Product updated) {
+        Product p = repo.findById(id)
+                .orElseThrow(() -> new RuntimeException("Product not found"));
 
+        if (repo.existsByNameAndSupplierId(updated.getName(), updated.getSupplierId())
+                && !p.getName().equals(updated.getName())) {
+            throw new RuntimeException("Duplicate product");
+        }
 
-        product.setName(updatedProduct.getName());
-        product.setPrice(updatedProduct.getPrice());
-        product.setQuantity(updatedProduct.getQuantity());
-        product.setSupplierId(updatedProduct.getSupplierId());
+        p.setName(updated.getName());
+        p.setPrice(updated.getPrice());
+        p.setQuantity(updated.getQuantity());
+        p.setSupplierId(updated.getSupplierId());
 
-        return repo.save(product);
+        return repo.save(p);
     }
     public List<Product> getLowStockProducts() {
         return repo.findAll().stream()
                 .filter(p -> p.getQuantity() < 5)
                 .toList();
     }
-
 
 
 }

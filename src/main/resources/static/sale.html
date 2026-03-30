@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <link rel="stylesheet" href="/css/style.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+
+<body>
+<div class="container">
+
+    <button onclick="window.location.href='index.html'" class="back-btn">Back</button>
+
+    <h2>Sales History</h2>
+
+    <input type="date" id="searchDate">
+    <button onclick="searchByDate()">Search</button>
+    <button onclick="loadSales()">Refresh</button>
+
+    <table>
+        <thead id="tableHead"></thead>
+        <tbody id="salesTable"></tbody>
+    </table>
+
+    <div class="chart-container">
+        <canvas id="salesChart"></canvas>
+    </div>
+
+</div>
+
+<script src="/js/history.js"></script>
+</body>
+</html>

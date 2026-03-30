@@ -18,4 +18,7 @@ function drawChart(labels, data) {
 }
 
 // Load initially
-window.onload = loadProducts;
+window.onload = () => {
+    loadProducts();
+    loadSuppliers();
+};

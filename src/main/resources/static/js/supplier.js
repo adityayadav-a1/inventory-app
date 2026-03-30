@@ -1,0 +1,98 @@
+let editingSupplierId = null;
+
+// LOAD SUPPLIERS
+function loadSuppliers() {
+    fetch(API + "/suppliers")
+        .then(res => res.json())
+        .then(data => {
+            let table = document.getElementById("supplierTable");
+            table.innerHTML = "";
+
+            data.forEach(s => {
+                table.innerHTML += `
+                <tr>
+                    <td>${s.id}</td>
+                    <td>${s.name}</td>
+                    <td>${s.contact}</td>
+                    <td>${s.address}</td>
+                    <td>
+                        <button onclick="editSupplier(${s.id}, '${s.name}', '${s.contact}', '${s.address}')">Edit</button>
+                        <button onclick="deleteSupplier(${s.id})">Delete</button>
+                    </td>
+                </tr>
+                `;
+            });
+        });
+}
+
+// ADD / UPDATE
+function addSupplier() {
+
+    const supplier = {
+        name: supplierName.value,
+        contact: supplierContact.value,
+        address: supplierAddress.value
+    };
+
+    let url = API + "/suppliers";
+    let method = "POST";
+
+    if (editingSupplierId) {
+        url = API + "/suppliers/" + editingSupplierId;
+        method = "PUT";
+    }
+
+    fetch(url, {
+        method: method,
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify(supplier)
+    })
+    .then(async res => {
+        if (!res.ok) {
+            const error = await res.json();
+            throw new Error(error.error || "Operation failed");
+        }
+        return res.json();
+    })
+    .then(() => {
+        alert(editingSupplierId ? "Supplier Updated" : "Supplier Added");
+
+        editingSupplierId = null;
+
+        supplierName.value = "";
+        supplierContact.value = "";
+        supplierAddress.value = "";
+
+        loadSuppliers();
+    })
+    .catch(err => alert(err.message));
+}
+
+// DELETE
+function deleteSupplier(id) {
+    fetch(`/suppliers/${id}`, {
+        method: "DELETE"
+    })
+    .then(res => {
+        if (!res.ok) {
+            return res.text().then(msg => { throw new Error(msg); });
+        }
+        alert("Supplier Deleted");
+        loadSuppliers();
+    })
+    .catch(err => alert(err.message));
+}
+
+// EDIT (fill form)
+function editSupplier(id, name, contact, address) {
+    supplierName.value = name;
+    supplierContact.value = contact;
+    supplierAddress.value = address;
+
+    editingSupplierId = id;
+}
+function goBack() {
+    window.location.href = "/index.html";
+}
+// AUTO LOAD
+loadSuppliers();
