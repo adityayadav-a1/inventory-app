@@ -2,13 +2,22 @@ let chart;
 
 // 🔥 LOAD DEFAULT (DATE-WISE)
 function loadSales() {
+
     const user = JSON.parse(localStorage.getItem("user"));
+
+    if (!user) {
+        alert("User not logged in");
+        return;
+    }
 
     fetch(`/sales/user/${user.id}`)
         .then(res => res.json())
         .then(data => {
 
-            console.log("API DATA:", data);
+            if (!Array.isArray(data)) {
+                console.error("Invalid data:", data);
+                return;
+            }
 
             let grouped = {};
 
@@ -23,6 +32,7 @@ function loadSales() {
             });
 
             renderTableDate(grouped);
+
             renderChart(
                 Object.keys(grouped),
                 Object.values(grouped),
@@ -31,7 +41,6 @@ function loadSales() {
         })
         .catch(err => console.error(err));
 }
-
 
 // 🔥 TABLE (DATE VIEW)
 function renderTableDate(grouped) {
@@ -49,7 +58,13 @@ function renderTableDate(grouped) {
     table.innerHTML = "";
 
     if (Object.keys(grouped).length === 0) {
-        table.innerHTML = "<tr><td colspan='2'>No data</td></tr>";
+        table.innerHTML = `
+            <tr>
+                <td colspan="2">No sales made</td>
+            </tr>
+        `;
+
+        renderChart([], [], "No Sales");
         return;
     }
 
@@ -68,6 +83,7 @@ function renderTableDate(grouped) {
 function searchByDate() {
 
     const input = document.getElementById("searchDate").value;
+    const user = JSON.parse(localStorage.getItem("user"));
 
     if (!input) {
         alert("Select a date");
@@ -75,34 +91,38 @@ function searchByDate() {
     }
 
     Promise.all([
-        fetch("/sales").then(res => res.json()),
-        fetch("/products").then(res => res.json())
+        fetch(`/sales/user/${user.id}`).then(res => res.json()),
+        fetch(`/products/user/${user.id}`).then(res => res.json())
     ])
     .then(([salesData, productData]) => {
 
-        // 🔥 Map productId → productName
+        // 🛑 SAFETY CHECK
+        if (!Array.isArray(salesData)) {
+            console.error("Sales data is not array:", salesData);
+            return;
+        }
+
+        // 🔥 Map productId → name
         let productMap = {};
         productData.forEach(p => {
             productMap[p.id] = p.name;
         });
 
-        // 🔥 Filter sales by date
+        // 🔥 FILTER BY DATE
         let filtered = salesData.filter(s =>
             s.saleDate && s.saleDate.startsWith(input)
         );
 
-        // 🔥 Group by PRODUCT ID (but store name also)
+        // 🔥 GROUP BY PRODUCT
         let grouped = {};
 
         filtered.forEach(s => {
-
             if (!grouped[s.productId]) {
                 grouped[s.productId] = {
                     name: productMap[s.productId] || "Unknown",
                     qty: 0
                 };
             }
-
             grouped[s.productId].qty += s.quantity;
         });
 
@@ -113,7 +133,8 @@ function searchByDate() {
             Object.values(grouped).map(g => g.qty),
             "Product Sales"
         );
-    });
+    })
+    .catch(err => console.error(err));
 }
 
 
@@ -186,12 +207,24 @@ function renderChart(labels, values, labelName) {
 
     const canvas = document.getElementById("salesChart");
 
-    if (!canvas) {
-        console.error("Canvas not found!");
-        return;
-    }
+    if (!canvas) return;
 
     if (chart) chart.destroy();
+
+    if (labels.length === 0) {
+        chart = new Chart(canvas, {
+            type: 'bar',
+            data: {
+                labels: ["No Data"],
+                datasets: [{
+                    label: "No Sales",
+                    data: [0],
+                    backgroundColor: '#ccc'
+                }]
+            }
+        });
+        return;
+    }
 
     chart = new Chart(canvas, {
         type: 'bar',
@@ -202,17 +235,6 @@ function renderChart(labels, values, labelName) {
                 data: values,
                 backgroundColor: '#3498db'
             }]
-        },
-        options: {
-            responsive: true,
-            plugins: {
-                legend: { display: true }
-            },
-            scales: {
-                y: {
-                    beginAtZero: true
-                }
-            }
         }
     });
 }
